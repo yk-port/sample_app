@@ -7,8 +7,14 @@ module SessionsHelper
 
   # sessionが有効になっているかを確認し、有効になっているユーザー（ログイン状態のユーザー）の値を返すメソッド
   def current_user
-    if session[:user_id]
-      @current_user ||= User.find_by(id: session[:user_id])
+    if (user_id = session[:user_id])
+      @current_user ||= User.find_by(id: user_id)
+    elsif (user_id = cookies.signed[:user_id])
+      user = User.find_by(id: user_id)
+      if user&.authenticated?(cookies[:remember_token])
+        log_in user
+        @current_user = user
+      end 
     end
   end
 
@@ -19,8 +25,26 @@ module SessionsHelper
 
   # 現在のユーザーをログアウトする
   def log_out
+    forget(current_user)
     session.delete(:user_id)
     @current_user = nil
   end
-  
+
+  # ユーザーのセッションを永続的に保持するためにブラウザのcookiesとDBのremember_digestに情報を記憶させる
+  def remember(user)
+    # rememberメソッド…ランダムな文字列でrememberトークンが作られ、その値をハッシュ化し、DBのremember_digestに保存されるメソッド
+    user.remember
+    # cookiesに暗号化したuser_idとremember_tokenの値を書き込む ※signedメソッドは数字を暗号化するためのメソッド
+    cookies.permanent.signed[:user_id] = user.id
+    cookies.permanent[:remember_token] = user.remember_token
+  end
+
+  # 永続的セッションを破棄する
+  def forget(user)
+    # forgetメソッド…remember_digestの値をnilにするメソッド
+    user.forget
+    # ブラウザのcookiesの中身を削除する処理
+    cookies.delete(:user_id)
+    cookies.delete(:remember_token)
+  end
 end
