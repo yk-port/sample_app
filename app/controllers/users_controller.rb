@@ -18,9 +18,15 @@ class UsersController < ApplicationController
   def create
     @user = User.new(user_params)
     if @user.save
-      log_in @user
-      flash[:success] = "Welcome to the Sample App!"
-      redirect_to @user
+      # メールでの認証確認をする以前は下記の処理だった（saveメソッドがtrueだったら、ログインをさせてメッセージを表示させる）
+      # log_in @user
+      # flash[:success] = "Welcome to the Sample App!"
+      # redirect_to @user
+
+      # メールでの認証を経てからログインさせるコードは以下（send_activation_emailメソッドを使ってメールを送信している）
+      @user.send_activation_email
+      flash[:info] = "Please check your email to activate your account."
+      redirect_to root_url
     else
       render 'new'
     end
