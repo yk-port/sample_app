@@ -1,5 +1,7 @@
 class User < ApplicationRecord
-  attr_accessor :remember_token, :activation_token
+  attr_accessor :remember_token, 
+                :activation_token,
+                :reset_token
   before_save :downcase_email
   # 下記のようにブロック付きメソッドで記述することも可能だが、通常は上記のようにメソッドにして呼び出す方法が主流
   # before_save { self.email = self.email.downcase }
@@ -59,6 +61,24 @@ class User < ApplicationRecord
   # UserMailerクラスのaccount_activationメソッドの返り値に対して、メールを送信する指示にあたるdeliver_nowメソッドを当てている
   def send_activation_email
     UserMailer.account_activation(self).deliver_now
+  end
+
+  # パスワード再設定用のdigestとreset_sent_atの値を更新するメソッド
+  def create_reset_digest
+    self.reset_token = User.new_token
+    update_attribute(:reset_digest,   User.digest(reset_token))
+    update_attribute(:reset_sent_at,  Time.zone.now)
+  end
+  
+  # 再設定用のメールを送信する
+  # UserMailerクラスのpassword_resetメソッドの返り値に対して、メールを送信する指示にあたるdeliver_nowメソッドを当てている
+  def send_password_reset_email
+    UserMailer.password_reset(self).deliver_now
+  end
+
+  # パスワード再設定の期限が切れている場合はtrueを返す
+  def password_reset_expired?
+    self.reset_sent_at < 2.hours.ago
   end
 
   private
