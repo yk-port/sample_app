@@ -7,6 +7,9 @@ class User < ApplicationRecord
   # before_save { self.email = self.email.downcase }
   before_create :create_activation_digest
 
+  # association
+  has_many :microposts, dependent: :destroy
+
   validates :name, presence: true,
                    length: { maximum: 50 }
   VALID_EMAIL_REGEX = /\A[\w+\-.]+@[a-z\d\-.]+\.[a-z]+\z/i
@@ -79,6 +82,11 @@ class User < ApplicationRecord
   # パスワード再設定の期限が切れている場合はtrueを返す
   def password_reset_expired?
     self.reset_sent_at < 2.hours.ago
+  end
+
+  # 試作feedの定義
+  def feed
+    Micropost.where("user_id = ?", self.id)
   end
 
   private

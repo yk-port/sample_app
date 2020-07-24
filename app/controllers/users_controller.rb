@@ -9,6 +9,7 @@ class UsersController < ApplicationController
 
   def show
     @user = User.find(params[:id])
+    @microposts = @user.microposts.paginate(page: params[:page])
   end
 
   def new
@@ -57,17 +58,6 @@ class UsersController < ApplicationController
   def user_params
     params.require(:user).permit(:name, :email, :password,
                                  :password_confirmation)
-  end
-
-  # ログイン済みユーザーかどうか確認
-  def logged_in_user
-    # もしログインしていなかったら
-    unless logged_in?
-      # 現在のURL（どこにもともとアクセスしたか）をsessionに一時保有するメソッド
-      store_location
-      flash[:danger] = "Please log in."
-      redirect_to login_path
-    end
   end
 
   # 正しいユーザーかどうか確認
